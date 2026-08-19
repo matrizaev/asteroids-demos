@@ -609,7 +609,12 @@ impl Player {
         Self {
             config,
             lives: config.starting_lives,
-            ship: ShipState::Active(Ship::spawn(&config)),
+            // Spawn protection: the ship starts invulnerable (and therefore
+            // blinks) for the first moments, matching the original game.
+            ship: ShipState::Invulnerable {
+                ship: Ship::spawn(&config),
+                remaining: config.invulnerability_time,
+            },
             weapon: Weapon::new(config.fire_cooldown),
         }
     }
@@ -1203,6 +1208,11 @@ mod tests {
                 .iter()
                 .all(|a| matches!(a, Asteroid::Large(_)))
         );
+        // The ship spawns with invulnerability (and its blink) active.
+        assert!(matches!(
+            playing.player().ship(),
+            ShipState::Invulnerable { .. }
+        ));
     }
 
     #[test]
@@ -1381,6 +1391,8 @@ mod tests {
     #[test]
     fn ship_hit_drains_a_life_and_respawns() {
         let mut playing = empty_playing(GameConfig::default());
+        // The ship spawns invulnerable; make it hittable for this test.
+        playing.player.ship = ShipState::Active(Ship::spawn(&playing.config));
         let center = playing.config.screen.center();
         playing
             .asteroids
@@ -1403,6 +1415,8 @@ mod tests {
             ..GameConfig::default()
         };
         let mut playing = empty_playing(config);
+        // The ship spawns invulnerable; make it hittable for this test.
+        playing.player.ship = ShipState::Active(Ship::spawn(&playing.config));
         let center = playing.config.screen.center();
         playing
             .asteroids
