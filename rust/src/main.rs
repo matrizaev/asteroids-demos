@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use asteroids::domain::{Game, GameConfig, GameState, Input, Radians, ShipState, Turn, Vec2};
+use asteroids::domain::{Game, GameConfig, GameState, Input, Radians, ShipState, Turn};
+use glam::Vec2;
 use raylib::prelude::*;
 
 /// Half-angle between the nose and each wing of the ship triangle.

@@ -14,69 +14,12 @@
 
 use std::{
     num::{NonZeroU8, NonZeroU32},
-    ops::{Add, AddAssign, Mul, MulAssign, Sub},
+    ops::{Add, AddAssign, Sub},
     time::Duration,
 };
 
+use glam::Vec2;
 use rand::RngExt;
-
-// ---------------------------------------------------------------------------
-// Vectors & screen geometry
-// ---------------------------------------------------------------------------
-
-/// A 2D vector in world units. The screen convention is that y grows downward,
-/// matching raylib's window coordinates.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Vec2 {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Vec2 {
-    pub const ZERO: Self = Self::new(0.0, 0.0);
-
-    pub const fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
-    }
-
-    pub fn length(self) -> f32 {
-        (self.x * self.x + self.y * self.y).sqrt()
-    }
-
-    /// Vector of the given length pointing in `angle`.
-    pub fn from_angle(angle: Radians, length: f32) -> Self {
-        let (sin, cos) = angle.sin_cos();
-        Self::new(sin * length, cos * length)
-    }
-}
-
-impl Add for Vec2 {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self {
-        Self::new(self.x + rhs.x, self.y + rhs.y)
-    }
-}
-
-impl AddAssign for Vec2 {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
-    }
-}
-
-impl Mul<f32> for Vec2 {
-    type Output = Self;
-
-    fn mul(self, rhs: f32) -> Self {
-        Self::new(self.x * rhs, self.y * rhs)
-    }
-}
-
-impl MulAssign<f32> for Vec2 {
-    fn mul_assign(&mut self, rhs: f32) {
-        *self = *self * rhs;
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Angles
@@ -142,6 +85,10 @@ impl Sub for Radians {
         Self(self.0 - rhs.0)
     }
 }
+
+// ---------------------------------------------------------------------------
+// Screen geometry
+// ---------------------------------------------------------------------------
 
 /// The playfield rectangle, in world units.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -952,7 +899,8 @@ impl AsteroidBody {
     fn random_at(position: Vec2, rng: &mut impl RngExt, config: &GameConfig) -> Self {
         Self {
             position,
-            velocity: Vec2::from_angle(Radians::random(rng), config.asteroid_speed.sample(rng)),
+            velocity: Vec2::from_angle(Radians::random(rng).value())
+                * config.asteroid_speed.sample(rng),
             rotation: Radians::random(rng),
             angular_velocity: config.asteroid_rotation.sample(rng),
         }
@@ -1144,9 +1092,7 @@ impl Asteroid {
 // ---------------------------------------------------------------------------
 
 fn circle_collide(a: Vec2, radius_a: f32, b: Vec2, radius_b: f32) -> bool {
-    let dx = a.x - b.x;
-    let dy = a.y - b.y;
-    (dx * dx + dy * dy).sqrt() < radius_a + radius_b
+    (a - b).length() < radius_a + radius_b
 }
 
 // ---------------------------------------------------------------------------
